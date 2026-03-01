@@ -1,0 +1,24 @@
+---
+description: TypeScript strict mode, naming, typed errors
+globs: "**/*.ts"
+alwaysApply: false
+---
+
+# TypeScript Standards
+
+See [docs/CODING_STANDARDS.md](../../docs/CODING_STANDARDS.md) for full detail.
+
+- Use strict mode; avoid `any`; prefer `unknown` when type is unknown.
+- **Naming**: camelCase for vars/functions, PascalCase for types/classes.
+- **Errors**: Use typed error classes with inheritance; include context (cause, code).
+
+```typescript
+// Good
+class NotFoundError extends AppError {
+  constructor(resource: string, id: string) {
+    super(`Resource not found: ${resource} (${id})`, { code: 'NOT_FOUND' });
+  }
+}
+```
+
+- Add TSDoc for all public (exported) APIs.

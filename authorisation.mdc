@@ -1,0 +1,14 @@
+---
+description: Janus + Cedar authorisation pattern
+alwaysApply: true
+---
+
+# Authorisation
+
+Use **Janus** (Cedar-based) for authorisation. See [docs/AUTHORISATION.md](../../docs/AUTHORISATION.md).
+
+- **AuthLambda** CDK construct: bundle Cedar WASM + policies + schema with Lambda.
+- **AuthorizationService** + **EntityBuilder**: evaluate policies in handlers.
+- **loadCedarAuthorization** Middy middleware: load Cedar at cold start.
+- Policies and schema in `authorisation/` (policies.cedar, schema.cedarschema).
+- Deny-by-default; check `isAuthorized()` inside the handler, not only at API Gateway.

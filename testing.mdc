@@ -1,0 +1,15 @@
+---
+description: Honeycomb testing methodology
+globs: ["**/*.test.ts", "**/*.spec.ts"]
+alwaysApply: false
+---
+
+# Testing
+
+Follow **Honeycomb** methodology. See [docs/TESTING.md](../../docs/TESTING.md) for full detail.
+
+- **Unit**: Pure logic, utilities, domain rules.
+- **Integration**: Use cases + repos, API + DB.
+- **E2E**: Critical user journeys.
+
+Choose the right type per scenario; no strict pyramid. Use descriptive names, prefer fakes/stubs over mocks, keep tests deterministic.

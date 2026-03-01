@@ -1,0 +1,18 @@
+---
+description: Hexagonal architecture, ports/adapters, REST vs GraphQL BFF
+alwaysApply: true
+---
+
+# Architecture
+
+Follow **Hexagonal Architecture** (Ports & Adapters). See [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md) for full detail.
+
+- **Domain at centre**: Business logic has no framework/infra dependencies.
+- **Ports**: Define interfaces (inbound = use cases, outbound = repositories, external services).
+- **Adapters**: Implement ports (REST controllers, GraphQL resolvers, DB, external APIs).
+
+**API choice**:
+- REST for general backend and service-to-service APIs.
+- GraphQL for BFF layers that shape data for specific frontends.
+
+**Monorepo**: `apps/*` = deployable apps, `packages/*` = shared libs. Packages must not depend on apps.

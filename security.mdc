@@ -1,0 +1,14 @@
+---
+description: OWASP basics, defense in depth, no secrets in code
+alwaysApply: true
+---
+
+# Security
+
+See [docs/SECURITY.md](../../docs/SECURITY.md) for full detail.
+
+- **OWASP Top 10**: Mitigate injection, broken auth, XSS, etc.
+- **Defense in depth**: Validate at every layer (API, app, data).
+- **No secrets in code**: Use env vars or secrets manager.
+- **Input validation**: Validate/sanitise at boundaries (e.g. Zod for request bodies).
+- **Auth/authz**: Check permissions in application layer.

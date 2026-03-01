@@ -1,0 +1,15 @@
+---
+description: AWS, serverless, CDK, DynamoDB, Cognito
+alwaysApply: true
+---
+
+# Platform
+
+See [docs/PLATFORM.md](../../docs/PLATFORM.md) for full detail.
+
+- **AWS, serverless-first**: Lambda for compute; ECS/Fargate when needed.
+- **CDK**: Use AWS CDK (TypeScript) for infra. Each app owns its stack.
+- **APIs**: HTTP API + Lambda for REST; AppSync for GraphQL.
+- **Data**: DynamoDB.
+- **Events**: EventBridge for events; SQS for queues.
+- **Auth**: Cognito.
