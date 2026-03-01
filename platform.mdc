@@ -5,11 +5,69 @@ alwaysApply: true
 
 # Platform
 
-See [docs/PLATFORM.md](../../docs/PLATFORM.md) for full detail.
+Target **AWS** with a **serverless-first** approach.
 
-- **AWS, serverless-first**: Lambda for compute; ECS/Fargate when needed.
-- **CDK**: Use AWS CDK (TypeScript) for infra. Each app owns its stack.
-- **APIs**: HTTP API + Lambda for REST; AppSync for GraphQL.
-- **Data**: DynamoDB.
-- **Events**: EventBridge for events; SQS for queues.
-- **Auth**: Cognito.
+## Compute
+
+- **Prefer serverless**: Use Lambda for compute where possible.
+- **Containers when needed**: Use ECS/Fargate for workloads that require long-running processes, persistent connections, or container-specific needs.
+- **Lambda configuration**: Set timeout and memory appropriately. Default 3s timeout is often too low for DB or external calls; consider 10–30s for API handlers. Increase memory if CPU-bound; Lambda allocates CPU proportionally to memory. Use reserved concurrency to protect downstream services or avoid throttling on burst traffic.
+- **Cold start mitigation**: Keep bundles small; lazy-load heavy dependencies. Use provisioned concurrency for latency-sensitive, low-traffic Lambdas. Consider Lambda SnapStart (Java) or similar when available for your runtime.
+
+### Lambda Standards
+
+- **AWS Lambda PowerTools**: Use [PowerTools for TypeScript](https://docs.powertools.aws.dev/lambda/typescript/) — Logger, Tracer, and Metrics utilities for structured logging, X-Ray tracing, and CloudWatch metrics.
+- **Custom metrics**: Implement custom business metrics (e.g. operations completed, errors by type) via PowerTools Metrics or CloudWatch `putMetricData`. Emit metrics for key operations and failures.
+- **Middy**: Use [Middy](https://middy.js.org/) for Lambda middleware. Apply middleware for authorisation, input validation (e.g. `@middy/validator` with JSON Schema, or custom Zod middleware), error handling (`httpErrorHandler`, `httpHeaderNormalizer`), logging, and other cross-cutting concerns. Do not implement these inline in handlers.
+- **Middleware order**: Apply in this order—`httpHeaderNormalizer` first (normalize headers), then validation, then authorisation, then handler, then `httpErrorHandler` last (catches and formats errors).
+
+## Infrastructure as Code
+
+- **AWS CDK**: Use CDK (TypeScript preferred) for all AWS infrastructure.
+- **Per-app stacks**: Each deployable app owns its CDK stack(s). Infra lives alongside the app (e.g. `apps/<api-app>/infra/` or `apps/<api-app>/cdk/`).
+- **Stack policy**: Use three separate stacks — Auth, Stateful, and Stateless. Do not combine into a single stack. See infra-stack-policy rule for details.
+
+## API Exposure
+
+| API Style | AWS Service |
+|-----------|-------------|
+| REST | API Gateway HTTP API + Lambda |
+| GraphQL | AppSync |
+
+Choose per app: HTTP API for REST services, AppSync for GraphQL BFF layers.
+
+## Data
+
+- **DynamoDB**: Primary database. Use for serverless NoSQL workloads.
+
+## Events & Messaging
+
+- **EventBridge**: For event-driven flows and pub/sub.
+- **SQS/SNS**: For queues and point-to-point messaging.
+
+Use EventBridge for events; use SQS for queues and async processing.
+
+## Auth
+
+- **Cognito**: Use for user authentication (user pools, identity pools).
+- **Authorisation**: Janus + Cedar. See authorisation rule for the serverless authorisation pattern.
+
+## Local Development
+
+- **UI**: Runs locally (frontend dev server). Uses `.env` for configuration.
+- **Backend**: Deployed to a development AWS account. The locally running UI calls the deployed API.
+
+### Setup
+
+1. **Environment variables**: Create `.env` in your frontend app directory. Use `.env.example` as a template. Add `.env` to `.gitignore`; never commit secrets.
+2. **Deploy backend**: `cd apps/<api-app>` then run your CDK deploy command (e.g. `pnpm cdk deploy --context env=dev`). Note API URL and Cognito IDs from stack outputs; update `.env`.
+3. **Run frontend**: Run your dev command (e.g. `pnpm dev`) from project root or frontend app directory.
+4. **Authentication**: Sign in with a test user created in the dev Cognito user pool. Ensure the user has `tenantId` in a custom claim or group for multi-tenant access.
+
+For Vite-based frontends, only variables prefixed with `VITE_` are exposed to the client. Do not put secrets in client-exposed variables.
+
+### Environment Parity
+
+- **Dev/staging/prod**: Keep environments as similar as possible. Use the same CDK stacks with context (e.g. `--context env=dev`). Avoid environment-specific code paths where feasible.
+- **Configuration**: Use environment variables or Parameter Store/Secrets Manager for environment-specific config. Never hardcode environment URLs or keys.
+- **Env var naming**: Use consistent prefixes (e.g. `API_`, `COGNITO_`, `DB_`) and `_SECRET` or `_KEY` suffix for sensitive values. Document required vars in `.env.example`.

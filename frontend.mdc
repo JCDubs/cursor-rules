@@ -1,0 +1,34 @@
+---
+description: Component structure, state management, accessibility, testing
+globs: ["**/apps/web/**/*.{ts,tsx,vue}", "**/apps/frontend/**/*.{ts,tsx,vue}", "**/packages/ui/**/*.{ts,tsx,vue}", "**/packages/components/**/*.{ts,tsx,vue}"]
+alwaysApply: false
+---
+
+# Frontend Standards
+
+## Component Structure
+
+- **Single responsibility**: Keep components focused. Extract reusable logic into hooks or composables.
+- **Props down, events up**: Prefer unidirectional data flow. Avoid prop drilling; use provide/inject or state management when needed.
+- **Co-locate**: Keep component-specific styles, tests, and assets next to the component.
+
+**Performance**: Consider bundle size and performance. Use lazy loading for routes and heavy components. Monitor Core Web Vitals where applicable.
+
+## State Management
+
+- **Local first**: Use component state for UI-only state. Lift state only when needed.
+- **Shared state**: Use Pinia, Zustand, or similar for global/shared state. Avoid prop drilling for deeply nested data.
+- **Server state**: Use TanStack Query, SWR, or similar for server data. Handle loading, error, and cache invalidation.
+
+## Accessibility
+
+- **Semantic HTML**: Use appropriate elements (`button`, `nav`, `main`, `article`, etc.). Avoid div/span for interactive elements.
+- **ARIA when needed**: Add ARIA attributes when semantics are insufficient. Prefer native semantics.
+- **Keyboard navigation**: Ensure all interactive elements are keyboard accessible. Support focus management in modals and dialogs.
+- **Color contrast**: Meet WCAG AA contrast ratios for text and interactive elements.
+
+## Testing
+
+- **Component tests**: Test components in isolation with testing-library or similar. Focus on user behaviour, not implementation.
+- **E2E for critical flows**: Use Playwright for sign-in, core CRUD, and critical user journeys. See testing rule.
+- **Mock API**: Use MSW or similar for consistent API mocking in tests.

@@ -1,0 +1,45 @@
+---
+description: REST API design — pagination, versioning, idempotency, CORS
+globs: ["**/handlers/**/*.ts", "**/lambda/**/*.ts", "**/openapi*.yaml", "**/openapi*.json", "**/docs/**/openapi*.yaml", "**/docs/**/api-spec*.yaml"]
+alwaysApply: false
+---
+
+# API Design
+
+## Pagination
+
+- **Format**: List endpoints support `?limit=N` and `?nextToken=<encoded>`.
+- **nextToken**: Base64-encode the cursor (e.g. DynamoDB `LastEvaluatedKey`, offset, or equivalent) as the continuation token. Response includes `nextToken` when more results exist.
+- **Default limit**: Cap default page size (e.g. 20–100) to avoid large responses.
+- **Response shape**: `{ items: [...], nextToken?: string }` or equivalent.
+
+## Versioning
+
+- **URL prefix**: Use `/v1/` or `/api/v1/` from the start to allow future breaking changes.
+- **Avoid breaking changes**: Add new fields as optional; deprecate old fields before removal. Document deprecation in OpenAPI and responses.
+- **Breaking changes**: When introducing breaking changes, create a new version (e.g. `/v2/`). Maintain the old version during a deprecation period; communicate timeline to consumers.
+
+## Idempotency
+
+- **Mutating operations**: For POST/PUT that create or update resources, support `Idempotency-Key` header. Store key with result; return same response for duplicate requests within a retention window (e.g. 24 hours).
+- **Apply to**: Resource creation, state-changing operations, webhook delivery, and other operations where duplicate requests would cause problems.
+
+## CORS
+
+- **Configure at API Gateway**: Allow required origins, methods, and headers. Do not use `*` for credentials in production.
+- **Preflight**: Ensure OPTIONS is configured for browser preflight requests.
+
+## Rate Limiting
+
+- **Throttling**: Configure API Gateway throttling (requests per second, burst) to protect backends. Use per-tenant or per-user limits when multi-tenant.
+- **429 responses**: Return 429 Too Many Requests with `Retry-After` header when limits are exceeded. Document rate limits in OpenAPI.
+
+## OpenAPI
+
+- **Maintain spec**: Produce and maintain OpenAPI (or equivalent) for REST APIs. Place in `openapi.yaml` or `docs/api-spec.yaml`.
+- **Document**: Include request/response schemas, error formats, auth requirements, and examples.
+
+## Health Checks
+
+- **Liveness/readiness**: Provide `/health` or `/ready` for load balancers, Kubernetes, and monitoring. Return 200 when the service can accept traffic; 503 when degraded or shutting down.
+- **Lightweight**: Health checks should be fast and not depend on downstream services unless necessary. Use a simple DB ping for readiness if the app requires DB access to serve requests.

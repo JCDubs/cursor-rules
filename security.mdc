@@ -5,10 +5,31 @@ alwaysApply: true
 
 # Security
 
-See [docs/SECURITY.md](../../docs/SECURITY.md) for full detail.
+## Principles
 
-- **OWASP Top 10**: Mitigate injection, broken auth, XSS, etc.
-- **Defense in depth**: Validate at every layer (API, app, data).
-- **No secrets in code**: Use env vars or secrets manager.
-- **Input validation**: Validate/sanitise at boundaries (e.g. Zod for request bodies).
-- **Auth/authz**: Check permissions in application layer.
+- **OWASP Top 10**: Be aware of and mitigate common vulnerabilities (injection, broken auth, XSS, etc.).
+- **Defense in depth**: Validate and sanitise at every layer—API, application, and data.
+
+## Rules
+
+1. **No secrets in code**: Use environment variables or a secrets manager. Never commit API keys, passwords, or tokens.
+2. **Input validation**: Validate and sanitise all user input at the boundary. Use schema validation (e.g. Zod) for request bodies.
+3. **Output encoding**: Escape output to prevent XSS and injection.
+4. **Authentication & authorisation**: Cognito for authentication. Use Janus + Cedar for authorisation; check permissions at the application layer via `AuthorizationService`. See authorisation rule.
+5. **Dependencies**: Keep dependencies updated; run `pnpm audit` (or `npm audit`) and address high/critical findings. Review and update dependencies regularly; address transitive vulnerabilities by upgrading or using overrides when necessary. Use Dependabot or Renovate to automate dependency update PRs.
+6. **Least privilege**: Services and DB users should have minimal required permissions.
+
+## Multi-Tenancy
+
+When the system is multi-tenant, apply the following. Single-tenant systems can omit tenant scoping.
+
+- **Tenant isolation**: Ensure `tenantId` (or equivalent) is derived from the authenticated user and applied to all data access. Never allow cross-tenant data access.
+- **Data scoping**: Filter all queries by `tenantId`. Use composite keys (e.g. `TENANT#${tenantId}#ENTITY#${id}`) in DynamoDB for efficient tenant-scoped queries.
+- **Testing**: Test with multiple tenants; verify that tenant A cannot access tenant B's data. Include tenant isolation in integration and E2E tests.
+
+## Checklist for New Features
+
+- [ ] Input validated and sanitised
+- [ ] Sensitive data not logged
+- [ ] Auth/authz checked where required
+- [ ] No hardcoded secrets

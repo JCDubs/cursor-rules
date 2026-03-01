@@ -1,0 +1,64 @@
+---
+description: Domain entities use classes with factories, static validation, and private constructors
+globs: ["**/domain/**/*.ts", "**/packages/domain/**/*.ts"]
+alwaysApply: false
+---
+
+# Domain Entity Standards
+
+Domain entities must use **classes** (not interfaces) with the following structure.
+
+## Structure
+
+1. **Class** – Entity is a class with readonly properties
+2. **Input interface** – `CreateXxxInput` for typed factory input
+3. **Private constructor** – Instances created only via static factory
+4. **Static factory** – `Xxx.create(input)` creates validated instances
+5. **Static validation** – `Xxx.validate(input)` validates and normalizes input
+6. **Validation logic** – Use shared `nonEmptyString`, `optionalString` from `validation.ts`; entity-specific validation as static methods on the class
+
+## Pattern
+
+```typescript
+export interface CreateEntityInput {
+  readonly id: string;
+  readonly name: string;
+  readonly tenantId?: string;  // Include if multi-tenant
+  // ...
+}
+
+export class Entity {
+  readonly id: string;
+  readonly name: string;
+  readonly tenantId?: string;
+
+  private constructor(props: { ... }) {
+    this.id = props.id;
+    // ...
+  }
+
+  static create(input: CreateEntityInput): Entity {
+    const validated = Entity.validate(input);
+    return new Entity(validated);
+  }
+
+  static validate(input: CreateEntityInput): { ... } {
+    return {
+      id: nonEmptyString(input.id, "id"),
+      // ...
+    };
+  }
+}
+```
+
+## Rules
+
+- **No plain interfaces for entities** – Use classes; interfaces only for input types (`CreateXxxInput`)
+- **No standalone factory functions** – Use `Xxx.create()` static method
+- **Validation in the class** – Static `validate()` and entity-specific validators (e.g. `Entity.validateType()`)
+- **Shared validation** – Use `nonEmptyString`, `optionalString` from `src/validation.ts` for common checks
+- **Private constructor** – Prevents `new Entity()`; forces use of factory
+
+## Reference
+
+See your domain package's entity implementations for examples.

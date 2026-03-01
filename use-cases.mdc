@@ -1,0 +1,37 @@
+---
+description: Use case structure, orchestration, ports-only dependencies
+globs: ["**/core/**/*.ts", "**/use-cases/**/*.ts", "**/domain/**/use-cases/**/*.ts", "**/application/**/*.ts", "**/handlers/**/*.ts", "**/lambda/**/*.ts", "**/src/handlers/**/*.ts"]
+alwaysApply: false
+---
+
+# Use Cases
+
+Use cases orchestrate business logic. They depend only on **ports** (interfaces); they never call infrastructure directly.
+
+## Structure
+
+- **Single responsibility**: One use case per business operation (e.g. `CreateEntity`, `ListEntities`, `ProcessAction`).
+- **Ports only**: Inject repository ports, event publisher ports, and other outbound dependencies via constructor or factory. Use interfaces, not implementations.
+- **Return domain types**: Use cases return domain entities, DTOs, or void. They do not return HTTP responses or infrastructure shapes.
+
+## Orchestration
+
+- **Orchestrate, don't implement**: Use cases coordinate calls to repositories, validate business rules, and publish events. Delegate persistence and external calls to adapters.
+- **Transaction boundaries**: Use cases define transaction scope. When multiple repository operations must succeed or fail together, the use case coordinates; the adapter implements the transaction (e.g. DynamoDB `TransactWriteItems`).
+- **Event publishing**: Call the event publisher port after successful mutations. Publish domain events (e.g. `Entity.Created`), not infrastructure events.
+
+## Conventions
+
+- **Naming**: Use imperative verbs: `CreateEntity`, `GetEntityById`, `ListEntities`, `UpdateEntity`, `DeleteEntity`.
+- **Input/output**: Use explicit input types (e.g. `CreateEntityInput`) and return types. Avoid optional parameters for required data.
+- **Validation**: Validate business rules in the use case. Delegate input format validation (e.g. Zod) to the adapter/handler layer.
+- **Errors**: Throw domain errors (`NotFoundError`, `ConflictError`, `ValidationError`) when business rules are violated. See error-handling and typescript-standards rules.
+
+## Handler Wiring
+
+Handlers are thin adapters: they parse the request, call the use case, and map the result to an HTTP response.
+
+- **Parse input**: Extract path params, query params, and body. Validate with Zod (or similar) before calling the use case.
+- **Call use case**: Inject the use case via constructor or factory. Pass parsed input; receive domain result or thrown error.
+- **Map response**: Map domain entities to JSON; set appropriate status codes. Catch domain errors and map to HTTP (see error-handling rule).
+- **No business logic in handlers**: Handlers orchestrate; use cases contain business logic.

@@ -5,13 +5,36 @@ alwaysApply: true
 
 # Git Commits
 
-Use **Conventional Commits**. See [docs/GIT_WORKFLOW.md](../../docs/GIT_WORKFLOW.md) for full detail.
+## Branching: GitHub Flow
+
+- **main**: Always deployable. Protected; changes via pull requests.
+- **Feature branches**: Short-lived branches from `main` for new work. Name: `feature/short-description` or `fix/short-description`.
+
+## Commits: Conventional Commits
 
 Format: `type(scope): description`
 
-Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`.
+### Types
 
-Examples:
-- `feat(auth): add login endpoint`
-- `fix(api): handle null user in middleware`
-- `docs: update architecture diagram`
+| Type | Use For |
+|------|---------|
+| `feat` | New feature |
+| `fix` | Bug fix |
+| `docs` | Documentation only |
+| `style` | Formatting, no code change |
+| `refactor` | Code change that neither fixes nor adds a feature |
+| `test` | Adding or updating tests |
+| `chore` | Build, tooling, dependencies |
+
+### Examples
+
+```
+feat(auth): add login endpoint
+fix(api): handle null user in middleware
+docs: update architecture diagram
+chore(deps): upgrade turbo to 2.5.2
+```
+
+### Scope
+
+- Optional. Use package or area: `feat(web)`, `fix(api)`, `chore(packages/ui)`.

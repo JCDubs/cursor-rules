@@ -1,19 +1,41 @@
 ---
 description: TypeScript strict mode, naming, typed errors
-globs: "**/*.ts"
+globs: ["**/*.ts"]
 alwaysApply: false
 ---
 
 # TypeScript Standards
 
-See [docs/CODING_STANDARDS.md](../../docs/CODING_STANDARDS.md) for full detail.
+## TypeScript
 
-- Use strict mode; avoid `any`; prefer `unknown` when type is unknown.
-- **Naming**: camelCase for vars/functions, PascalCase for types/classes.
-- **Errors**: Use typed error classes with inheritance; include context (cause, code).
+- Use **strict mode** (`strict: true` in `tsconfig.json`).
+- Avoid `any`; prefer `unknown` when type is truly unknown.
+- Use explicit return types on public functions.
+
+## Linting & Formatting
+
+- Use **Biome** for linting and formatting.
+- Run your lint command (e.g. `pnpm lint`) before committing.
+- Configure Biome via `biome.json` at the project root.
+
+## Naming Conventions
+
+| Kind | Convention | Example |
+|------|------------|---------|
+| Variables, functions, methods | camelCase | `getUserById`, `isValid` |
+| Types, interfaces, classes | PascalCase | `UserRepository`, `ValidationError` |
+| Constants | camelCase or UPPER_SNAKE | `maxRetries`, `API_BASE_URL` |
+| Files | kebab-case | `user-repository.ts` |
+
+## Error Handling
+
+- Use **typed error classes** with proper inheritance.
+- Define domain-specific errors extending a base `AppError` or `DomainError`.
+- Include context (e.g. `cause`, `code`) in error constructors.
+- Avoid swallowing errors; log and rethrow or return typed errors at boundaries.
 
 ```typescript
-// Good
+// Example
 class NotFoundError extends AppError {
   constructor(resource: string, id: string) {
     super(`Resource not found: ${resource} (${id})`, { code: 'NOT_FOUND' });
@@ -21,4 +43,8 @@ class NotFoundError extends AppError {
 }
 ```
 
-- Add TSDoc for all public (exported) APIs.
+## Documentation
+
+- Add **TSDoc** for all public APIs (exported functions, classes, interfaces).
+- Keep README files in each package with purpose, usage, and local dev instructions.
+- Record significant decisions in ADRs when applicable.

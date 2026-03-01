@@ -1,0 +1,50 @@
+---
+description: API error format, typed errors, HTTP status mapping
+globs: ["**/handlers/**/*.ts", "**/lambda/**/*.ts", "**/src/handlers/**/*.ts"]
+alwaysApply: false
+---
+
+# Error Handling
+
+## API Error Format
+
+API errors shall follow a consistent structure. Use either **RFC 7807** (Problem Details for HTTP APIs) or a simplified format:
+
+```json
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Resource not found",
+    "details": { "resourceId": "example-id" }
+  }
+}
+```
+
+| Field | Purpose |
+|-------|---------|
+| `code` | Machine-readable error code (e.g. NOT_FOUND, VALIDATION_ERROR, UNAUTHORIZED) |
+| `message` | Human-readable message |
+| `details` | Optional; additional context (e.g. validation errors, field names) |
+
+## HTTP Status Code Mapping
+
+| Domain Error | HTTP Status |
+|--------------|-------------|
+| NotFoundError | 404 |
+| ValidationError | 400 |
+| UnauthorizedError | 401 |
+| ForbiddenError | 403 |
+| ConflictError | 409 |
+| Internal/Unknown | 500 |
+
+## Typed Domain Errors
+
+Define typed error classes in your domain or shared package (see typescript-standards rule for the pattern):
+
+- `NotFoundError` — resource does not exist
+- `ValidationError` — input validation failed (include field-level details)
+- `UnauthorizedError` — not authenticated
+- `ForbiddenError` — authenticated but not authorised
+- `ConflictError` — e.g. duplicate identifier, business rule violation
+
+Handlers catch domain errors and map to HTTP responses. Never expose internal stack traces to clients. Use Middy `httpErrorHandler` and `httpHeaderNormalizer` for consistent error responses and request normalization.

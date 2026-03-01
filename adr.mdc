@@ -1,0 +1,46 @@
+---
+description: Architecture Decision Record format
+globs: ["**/adr/**/*.md", "**/docs/adr/**/*.md"]
+alwaysApply: false
+---
+
+# Architecture Decision Records
+
+Record significant architectural and technical decisions in **Architecture Decision Records (ADRs)**.
+
+## When to Create an ADR
+
+- Technology choices (e.g. DynamoDB vs RDS, REST vs GraphQL for a service)
+- Structural decisions (e.g. three-stack CDK policy, monorepo layout)
+- Patterns that affect multiple teams or services (e.g. pagination format, error format)
+- Trade-offs with non-obvious outcomes
+
+## Format
+
+Use a simple format. Place ADRs in `adr/` or `docs/adr/` at the project root.
+
+```markdown
+# ADR-XXXX: Short Title
+
+## Status
+Proposed | Accepted | Deprecated | Superseded by [ADR-YYYY]
+
+## Context
+What is the issue we're facing? What constraints exist?
+
+## Decision
+What did we decide to do?
+
+## Consequences
+What are the positive and negative outcomes? What do we need to do next?
+```
+
+## Naming
+
+- **Filename**: Use zero-padded numbers with a short slug: `0001-first-decision.md`, `0009-cdk-stack-policy.md`. Do not include "ADR-" in the filename.
+- **Title inside file**: Use `# ADR-0001: Short Title` so the ADR number matches the filename.
+- Keep filenames short and descriptive.
+
+## References
+
+- [adr.github.io](https://adr.github.io/) — ADR templates and examples

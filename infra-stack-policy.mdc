@@ -1,0 +1,33 @@
+---
+description: CDK stack policy — auth, stateful, and stateless stacks must be separate
+globs: ["**/infra/**/*.ts", "**/cdk/**/*.ts"]
+alwaysApply: false
+---
+
+# Infrastructure Stack Policy
+
+CDK stacks must follow a **three-stack policy**: Auth, Stateful, and Stateless. Do not combine these into a single stack.
+
+## Stack Layout
+
+| Stack | Purpose | Resources |
+|-------|---------|-----------|
+| **Auth** | Identity & authentication | Cognito User Pool, App Client, custom attributes |
+| **Stateful** | Persistent data | DynamoDB tables, EventBridge event bus |
+| **Stateless** | Compute & routing | API Gateway, Lambda handlers, authorizers |
+
+## Rules
+
+- **Auth stack**: All Cognito and identity resources. No compute or data.
+- **Stateful stack**: DynamoDB, EventBridge, and other data infrastructure. No Lambdas or API Gateway.
+- **Stateless stack**: API Gateway, Lambdas, authorizers. Receives cross-stack references from Auth and Stateful via props.
+
+## Dependencies
+
+- Auth and Stateful stacks have no dependencies on each other.
+- Stateless stack depends on both Auth and Stateful (`addDependency()`).
+- Deployment order: Auth and Stateful first (any order), Stateless last.
+
+## Reference
+
+Implement `auth-stack.ts`, `stateful-stack.ts`, and `stateless-stack.ts` in your API app's infra directory. See the platform rule for full platform standards.

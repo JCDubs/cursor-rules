@@ -5,14 +5,42 @@ alwaysApply: true
 
 # Architecture
 
-Follow **Hexagonal Architecture** (Ports & Adapters). See [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md) for full detail.
+Follow **Hexagonal Architecture** (Ports & Adapters) with domain logic at the centre and infrastructure at the edges.
 
-- **Domain at centre**: Business logic has no framework/infra dependencies.
-- **Ports**: Define interfaces (inbound = use cases, outbound = repositories, external services).
-- **Adapters**: Implement ports (REST controllers, GraphQL resolvers, DB, external APIs).
+## Principles
 
-**API choice**:
-- REST for general backend and service-to-service APIs.
-- GraphQL for BFF layers that shape data for specific frontends.
+- **Domain at the centre**: Business logic lives in the domain layer and has no dependencies on frameworks or infrastructure.
+- **Ports define interfaces**: Inbound ports (use case interfaces) and outbound ports (repository, external service interfaces) are defined by the domain.
+- **Adapters implement ports**: REST controllers, GraphQL resolvers, database implementations, and external API clients are adapters that implement ports.
+- **Use cases**: See the use-cases rule for use case structure, orchestration, and handler wiring.
 
-**Monorepo**: `apps/*` = deployable apps, `packages/*` = shared libs. Packages must not depend on apps.
+## API Strategy
+
+| Context | API Style | Rationale |
+|---------|-----------|-----------|
+| General backend services | REST | Resource-oriented, standard HTTP semantics |
+| Backend-for-Frontend (BFF) | GraphQL | Query-driven, flexible data shaping for UI needs |
+
+Use REST for public or service-to-service APIs. Use GraphQL when building BFF layers that aggregate and shape data for specific frontends. See api-design rule for pagination, versioning, and idempotency standards.
+
+## Monorepo Layout
+
+```
+<project-root>/
+├── apps/           # Deployable applications
+│   ├── web/        # Frontend app(s)
+│   ├── api/        # REST API service(s) — owns its CDK stack
+│   └── bff/        # GraphQL BFF (if applicable) — owns its CDK stack
+└── packages/       # Shared libraries
+    ├── domain/     # Domain entities, ports
+    ├── core/       # Use cases, application services
+    └── shared/     # Utilities, types, config
+```
+
+Shared packages must not depend on apps. Apps may depend on packages. Each app owns its infrastructure.
+
+**Monorepo tooling**: Use Turborepo, Nx, or similar for task orchestration, caching, and dependency-aware builds when the monorepo grows.
+
+## Infrastructure Stack Layout
+
+CDK stacks follow a **three-stack policy**: Auth, Stateful, and Stateless. Auth and Stateful stacks have no dependencies; Stateless depends on both. See the infra-stack-policy rule for the full standard.

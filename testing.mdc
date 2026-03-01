@@ -6,10 +6,57 @@ alwaysApply: false
 
 # Testing
 
-Follow **Honeycomb** methodology. See [docs/TESTING.md](../../docs/TESTING.md) for full detail.
+Use **Vitest** (or similar) for unit/integration tests and **Playwright** (or similar) for E2E tests.
 
-- **Unit**: Pure logic, utilities, domain rules.
-- **Integration**: Use cases + repos, API + DB.
-- **E2E**: Critical user journeys.
+## Setup
 
-Choose the right type per scenario; no strict pyramid. Use descriptive names, prefer fakes/stubs over mocks, keep tests deterministic.
+```bash
+pnpm install   # or npm install / yarn install
+pnpm exec playwright install chromium   # or `playwright install` for all browsers
+```
+
+E2E tests typically use mocked API and auth. Ensure Chromium (or your target browser) is installed before running E2E.
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `pnpm test` (or `npm run test`) | Run all tests (unit + E2E) |
+| `pnpm test:unit` | Run Vitest in workspace packages |
+| `pnpm test:e2e` | Run Playwright (all browsers) |
+| `pnpm test:e2e:chromium` | Run Playwright (Chromium only, faster) |
+| `pnpm typecheck` | TypeScript check without emit |
+| `pnpm lint` | Run Biome lint check |
+
+## Definition of Done (Per Task)
+
+**A task is not complete until all applicable checks pass.** Run your project's check command (e.g. `pnpm check`, `npm run check`) after each task. This runs format, lint, typecheck, and test in sequence. Do not mark a task complete or proceed to the next task until all checks pass.
+
+- **Pre-commit hook** (e.g. husky): runs the check command before each commit
+- **AI workflow**: The quality-checks-after-task rule instructs the AI to run the project's check command after each task, then fix any failures before marking the task complete
+
+## Philosophy (Honeycomb)
+
+A balanced mix of unit, integration, and end-to-end tests rather than a strict pyramid.
+
+- **Unit tests**: Fast feedback for pure logic, utilities, and domain rules.
+- **Integration tests**: Verify components work together (e.g. use case + repository, API + DB).
+- **E2E tests**: Validate critical user journeys and system behaviour.
+
+No single layer dominates. Choose the right test type for each scenario.
+
+## When to Use Each
+
+| Test Type | Use For |
+|-----------|---------|
+| Unit | Pure functions, domain logic, mappers, validators, entities, use cases with test doubles |
+| Integration | Use cases with real or test doubles, API handlers with DB, Lambda handlers |
+| E2E | Sign-up, core CRUD flows, critical user journeys |
+
+## Conventions
+
+- Place tests next to source: `user.service.ts` → `user.service.test.ts`, or in a `__tests__` directory.
+- **Snapshot testing**: Use sparingly for UI components or serialized output. Prefer explicit assertions for business logic. Avoid snapshots for large or frequently changing output; they can become maintenance burden.
+- Use descriptive test names: `it('returns 404 when user does not exist', ...)`.
+- Prefer test doubles (fakes, stubs) over mocks where practical.
+- Keep tests deterministic; avoid flakiness from timing or randomness.

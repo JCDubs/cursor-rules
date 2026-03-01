@@ -5,10 +5,88 @@ alwaysApply: true
 
 # Authorisation
 
-Use **Janus** (Cedar-based) for authorisation. See [docs/AUTHORISATION.md](../../docs/AUTHORISATION.md).
+Use **Janus** (Cedar-based) for fine-grained authorisation: self-contained serverless authorisation with [Cedar](https://www.cedarpolicy.com/).
 
-- **AuthLambda** CDK construct: bundle Cedar WASM + policies + schema with Lambda.
-- **AuthorizationService** + **EntityBuilder**: evaluate policies in handlers.
-- **loadCedarAuthorization** Middy middleware: load Cedar at cold start.
-- Policies and schema in `authorisation/` (policies.cedar, schema.cedarschema).
-- Deny-by-default; check `isAuthorized()` inside the handler, not only at API Gateway.
+## Overview
+
+- **Authentication**: Cognito (who you are).
+- **Authorisation**: Janus + Cedar (what you can do). Deny-by-default, policy-based access control.
+
+Janus bundles the Cedar policy engine, policies, and schema **inside each Lambda**—no central policy store. Policies and schema are versioned with the service and deployed via CDK.
+
+## Components
+
+| Component | Purpose |
+|-----------|---------|
+| `@jcdubs/janus` | npm package: CDK construct, SDK, middleware |
+| `AuthLambda` | CDK construct: bundles Cedar WASM + policies + schema into Lambda |
+| `AuthorizationService` | SDK: evaluates Cedar policies (cached singleton) |
+| `EntityBuilder` | SDK: fluent builder for Cedar entities in auth requests |
+| `loadCedarAuthorization` | Middy middleware: loads Cedar into Lambda context |
+
+## Flow
+
+1. **Cognito** authenticates the user; JWT is passed to Lambda (e.g. via API Gateway authoriser).
+2. **AuthLambda** CDK construct ensures `policies.cedar`, `schema.cedarschema`, and Cedar WASM are bundled in the Lambda package.
+3. **Middy** `loadCedarAuthorization` middleware loads policies/schema at cold start.
+4. Handler uses **AuthorizationService** + **EntityBuilder** to build the request (principal, action, resource, entities) and call `isAuthorized()`.
+5. Cedar evaluates; deny-by-default. Return 403 if not authorised.
+
+## File Layout (per service)
+
+```
+<api-app>/
+├── authorisation/
+│   ├── policies.cedar      # Cedar policies
+│   └── schema.cedarschema  # Cedar schema (entities, actions)
+├── src/
+│   └── handlers/
+└── infra/                  # CDK stack using AuthLambda
+```
+
+## Example
+
+```typescript
+import middy from '@middy/core';
+import { loadCedarAuthorization, AuthorizationService, EntityBuilder, getUserName } from '@jcdubs/janus';
+
+const authorizationConfig = {
+  namespace: 'ExampleService::',
+  principalType: 'User',
+  resourceType: 'Resource',
+  roleType: 'Role',
+};
+
+const handler = async (event) => {
+  const authService = await AuthorizationService.getService(authorizationConfig);
+  const resourceId = event.pathParameters?.id ?? '';
+
+  const isAuthorized = authService
+    .setAction('viewResource')
+    .setResource(resourceId)
+    .addEntity(
+      new EntityBuilder(resourceId, authorizationConfig)
+        .withStringAttr('ownerId', getUserName(event))
+        .build(),
+    )
+    .isAuthorized();
+
+  return { statusCode: isAuthorized ? 200 : 403, body: JSON.stringify({ allowed: isAuthorized }) };
+};
+
+export const main = middy(handler).use(loadCedarAuthorization(authorizationConfig));
+```
+
+## Conventions
+
+- Use **AuthLambda** (not plain `NodejsFunction`) for Lambdas that need authorisation.
+- Define Cedar **schema** first (entities, actions); then **policies**.
+- Policies live in `authorisation/` next to the service; colocate with the domain they protect.
+- Use `getUserName(event)` and `getRoles(event)` from Janus to extract Cognito claims.
+- Authorisation checks happen **inside the handler** (application layer), not only at the API Gateway.
+
+## Resources
+
+- [Janus GitHub](https://github.com/JCDubs/Janus)
+- [Janus npm](https://www.npmjs.com/package/@jcdubs/janus)
+- [Cedar Policy Language](https://docs.cedarpolicy.com/)

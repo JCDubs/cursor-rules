@@ -1,0 +1,33 @@
+---
+description: Repository patterns, DynamoDB access, transactions
+globs: ["**/repositories/**/*.ts", "**/adapters/**/*.ts", "**/domain/**/ports/**/*.ts", "**/domain/**/interfaces/**/*.ts"]
+alwaysApply: false
+---
+
+# Data Access
+
+## Repository Pattern
+
+- **Ports in domain**: Define repository interfaces (ports) in the domain layer (e.g. `domain/ports/` or `domain/interfaces/`). Use cases depend on ports, not implementations.
+- **Adapters implement ports**: Repository implementations live in the API/infra layer. They implement domain ports and wrap DynamoDB, RDS, or other data stores.
+- **Return domain entities**: Repositories return domain entities (or null/optional), not raw DB shapes. Map in the adapter.
+
+**Note**: For RDS or other relational databases, use the same repository pattern. Implement adapters that wrap the DB client and return domain entities. Use transactions for multi-statement operations.
+
+## DynamoDB
+
+- **Access patterns first**: Design keys (PK, SK) and GSIs around query patterns. Document access patterns in the adapter or a design doc.
+- **Single-table vs multi-table**: Prefer single-table design for related entities when access patterns align. Use multi-table when isolation or different scaling is needed.
+- **Key design**: Use composite keys (e.g. `TENANT#${tenantId}#ENTITY#${id}`) for multi-tenant isolation and efficient queries.
+- **Transactions**: Use `TransactWriteItems` for operations that must succeed or fail together. Keep transactions small.
+
+## Soft Delete and TTL
+
+- **Soft delete**: When delete means "deactivate" rather than remove, use an `isActive` or `deletedAt` field. Set `isActive=false` or `deletedAt=timestamp` on delete; filter these out in queries.
+- **TTL**: For soft-deleted items, set a TTL attribute (e.g. 6 months from delete) so DynamoDB automatically removes them. Use `ConditionExpression` to exclude soft-deleted items from active queries.
+- **Undelete**: If undelete is required, clear `deletedAt`/`isActive` and remove or extend TTL before it fires.
+
+## Conventions
+
+- **Pagination**: Use `Limit` and `ExclusiveStartKey`; return `LastEvaluatedKey` for continuation. See api-design rule for API-level pagination.
+- **Error handling**: Map DynamoDB errors (e.g. `ConditionalCheckFailedException`) to domain errors (e.g. `ConflictError`). See error-handling rule.

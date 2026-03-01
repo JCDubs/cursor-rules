@@ -1,0 +1,37 @@
+---
+description: Event schema, idempotency, DLQ, retries
+globs: ["**/handlers/**/*.ts", "**/lambda/**/*.ts", "**/events/**/*.ts"]
+alwaysApply: false
+---
+
+# Event Handling
+
+## Event Schema
+
+- **Structured payloads**: Use consistent event envelope: `eventType`, `correlationId`, `timestamp`, `payload`. Version the schema when breaking changes occur.
+- **Event types**: Use namespaced names (e.g. `Entity.Created`, `Domain.Action`) for clarity and filtering.
+- **Include context**: Add `tenantId`, `source`, and identifiers needed for idempotency and tracing.
+
+## Idempotency
+
+- **Idempotent handlers**: Event handlers (e.g. webhook dispatcher, sync workers) should be idempotent. Use `correlationId` + `eventType` + resource ID as idempotency key; skip or return cached result for duplicates.
+- **Store processed IDs**: For critical flows, store processed event IDs in DynamoDB with TTL. Reject or ignore duplicates within the TTL window.
+
+## Retries and DLQ
+
+- **Retry policy**: Configure SQS/EventBridge retries with exponential backoff. Use reasonable max attempts (e.g. 3–5).
+- **Dead-letter queue**: Route failed messages to a DLQ. Monitor DLQ depth; alert on buildup. Process or archive DLQ messages.
+- **Partial failures**: For batch processing, handle partial failures. Log failures; consider retrying only failed items.
+
+## EventBridge vs SQS
+
+- **EventBridge**: Use for pub/sub, fan-out, and event-driven flows. Multiple consumers can subscribe to the same event.
+- **SQS**: Use for point-to-point, ordered processing, or when you need queue semantics (visibility timeout, DLQ).
+
+## Webhook Security
+
+When delivering events to external webhooks:
+
+- **HMAC signing**: Sign payloads with a shared secret (e.g. HMAC-SHA256). Include signature in header (e.g. `X-Webhook-Signature`). Subscribers verify before processing.
+- **Verification**: Document verification steps for subscribers. Use constant-time comparison when validating signatures.
+- **Configurable per subscriber**: Allow each subscriber to have its own signing key. Never log or expose signing keys.

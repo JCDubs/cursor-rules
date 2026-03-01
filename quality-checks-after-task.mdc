@@ -1,0 +1,35 @@
+---
+description: Run all quality checks automatically after completing each task
+alwaysApply: true
+---
+
+# Quality Checks After Each Task
+
+**Always run quality checks after completing each task.** Do not mark a task complete or proceed to the next task until all checks pass.
+
+## Workflow
+
+1. Implement the task
+2. **Launch a quality-check subagent** (see below)
+3. Fix any failures reported by the subagent before marking the task complete
+4. Only then move to the next task (update your project's task list if you maintain one)
+
+## Quality-Check Subagent
+
+After each task, launch a **shell subagent** to run the full quality check:
+
+- **Tool**: `mcp_task`
+- **subagent_type**: `shell`
+- **description**: `Run quality checks after task`
+- **prompt**: `Navigate to the project root (directory containing package.json with the "check" script) and run the check command (e.g. pnpm check, npm run check). Report the exit code and full output. If any check fails (format, lint, typecheck, or test), list the specific failures.`
+
+The subagent runs the project's check command in isolation and returns the result. Use its output to decide whether to fix issues before marking the task complete.
+
+## Checks Included
+
+- **Format** – Biome format
+- **Lint** – Biome lint (and monorepo orchestration lint if using Turborepo)
+- **Typecheck** – TypeScript
+- **Tests** – Unit (Vitest) + E2E (Playwright)
+
+This is part of the Definition of Done. See the testing rule for full Definition of Done details.

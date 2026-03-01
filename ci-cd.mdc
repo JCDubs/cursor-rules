@@ -1,0 +1,31 @@
+---
+description: CI/CD pipelines, branch protection, deployment workflow
+globs: ["**/.github/**/*.yml", "**/.github/**/*.yaml", "**/Jenkinsfile", "**/.gitlab-ci.yml"]
+alwaysApply: false
+---
+
+# CI/CD
+
+## Branch Protection
+
+- **main**: Protect the default branch. Require pull requests for changes; require status checks to pass before merge.
+- **Status checks**: Run format, lint, typecheck, and tests on every PR. Use the same commands as local (e.g. `pnpm check`).
+- **No direct pushes**: Disallow direct pushes to main; all changes via PR.
+
+## Pipeline Stages
+
+- **On PR**: Run full check (format, lint, typecheck, test). Optionally run CDK synth to validate infrastructure.
+- **On merge to main**: Deploy to dev (or staging) automatically, or trigger deployment workflow.
+- **Production**: Deploy to production via manual approval, release tag, or separate production branch. Never auto-deploy to prod from every merge unless explicitly desired.
+
+## Deployment
+
+- **Environment promotion**: Use the same CDK stacks with context (e.g. `--context env=dev`, `--context env=prod`). Promote through dev → staging → prod.
+- **Secrets**: Use GitHub Secrets, AWS Secrets Manager, or Parameter Store for deployment credentials. Never store secrets in pipeline config.
+- **Rollback**: Document rollback procedure (e.g. revert commit, redeploy previous version). Consider blue/green or canary for critical services.
+
+## Conventions
+
+- **GitHub Actions**: Use workflows in `.github/workflows/`. Reuse composite actions for common steps.
+- **Caching**: Cache dependencies (e.g. pnpm store, node_modules) to speed up runs.
+- **Concurrency**: Cancel in-progress runs when a new commit is pushed to the same branch.

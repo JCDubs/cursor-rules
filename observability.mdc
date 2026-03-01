@@ -1,0 +1,33 @@
+---
+description: Structured logging, correlation IDs, log hygiene
+globs: ["**/handlers/**/*.ts", "**/lambda/**/*.ts", "**/src/handlers/**/*.ts"]
+alwaysApply: false
+---
+
+# Observability
+
+Use **AWS Lambda PowerTools Logger** for structured logging. Emit correlation IDs across requests and events for tracing.
+
+## Structured Logging
+
+- **Structured format**: Use JSON logs with consistent fields. PowerTools Logger emits `timestamp`, `level`, `message`, `service`, and custom keys.
+- **Add context**: Include `requestId`, `correlationId`, `tenantId` (if multi-tenant), and operation-specific fields in log entries.
+- **Log levels**: Use `DEBUG` for verbose troubleshooting, `INFO` for normal flow, `WARN` for recoverable issues, `ERROR` for failures. Avoid logging at DEBUG in production unless needed.
+- **Sampling**: In high-volume production, consider sampling DEBUG/INFO logs (e.g. 1% or 10%) while logging all WARN/ERROR. Reduces cost and noise while preserving critical signals.
+
+## Correlation IDs
+
+- **Propagate correlation ID**: Accept `x-correlation-id` (or similar) from API Gateway; generate one if absent. Pass to downstream calls, event payloads, and log context.
+- **Request ID**: Use `context.awsRequestId` (Lambda) or API Gateway request ID for request-scoped tracing.
+- **Event payloads**: Include `correlationId` in EventBridge/SQS event payloads so async flows can be traced.
+
+## Log Hygiene
+
+- **Never log secrets**: Do not log passwords, tokens, API keys, or PII in plain text. Redact or omit.
+- **Sensitive data**: Mask or hash identifiers that could be sensitive (e.g. partial email, redacted IDs in logs).
+- **Error logging**: Log error stack traces server-side; never expose them to API responses. Use PowerTools Logger's `appendKeys` for error context.
+
+## Metrics
+
+- **Custom metrics**: Use PowerTools Metrics or CloudWatch `putMetricData` for business KPIs (see platform rule).
+- **Standard dimensions**: Include `service`, `operation`, `status` (success/failure) where applicable.
